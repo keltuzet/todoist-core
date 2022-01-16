@@ -9,6 +9,16 @@
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
     "noImplicitReturns": true,
+    "paths": {
+      "menu": [
+        "dist/menu/menu",
+        "dist/menu"
+      ],
+      "tooltip": [
+        "dist/tooltip/tooltip",
+        "dist/tooltip"
+      ]
+    },
     "noFallthroughCasesInSwitch": true,
     "sourceMap": true,
     "declaration": false,
