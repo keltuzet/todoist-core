@@ -45,6 +45,7 @@ export class TooltipDirective implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    console.log('Init');
     this.init();
 
     this.tpl$.subscribe((tpl) => this.setPortal(tpl));

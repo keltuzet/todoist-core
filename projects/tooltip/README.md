@@ -1,24 +1,33 @@
 # Tooltip
 
-This library was generated with [Angular CLI](https://github.com/angular/angular-cli) version 13.1.0.
+A menu displays a list of choices or any view. They appear when users interact with a button, action, or other control.
 
-## Code scaffolding
+## Installation
+```
+npm install todoist-tooltip
+```
+## Basic Usage
 
-Run `ng generate component component-name --project tooltip` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module --project tooltip`.
-> Note: Don't forget to add `--project tooltip` or else it will be added to the default project in your `angular.json` file. 
+### Menu from template
+#### Component HTML
+```
+<button [tMenuTrigger]="menu">Open menu</button>
+<ng-template #menu><p>Any tempate</p></ng-template>
+```
 
-## Build
-
-Run `ng build tooltip` to build the project. The build artifacts will be stored in the `dist/` directory.
-
-## Publishing
-
-After building your library with `ng build tooltip`, go to the dist folder `cd dist/tooltip` and run `npm publish`.
-
-## Running unit tests
-
-Run `ng test tooltip` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+### Menu from component
+#### Component HTML
+```
+<button [tMenuTrigger]="menu">Open menu</button>
+```
+#### Component
+```
+@Component({
+  selector: 't-header-extra-toolbar',
+  templateUrl: './header-extra-toolbar.component.html',
+  styleUrls: ['./header-extra-toolbar.component.scss'],
+})
+export class HeaderExtraToolbarComponent {
+  productivityMenu = MenuComponent;
+}
+```

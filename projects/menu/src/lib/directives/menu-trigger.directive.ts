@@ -1,11 +1,6 @@
 import { Overlay, OverlayRef } from '@angular/cdk/overlay';
+import { ComponentPortal, ComponentType, TemplatePortal } from '@angular/cdk/portal';
 import {
-  ComponentPortal,
-  ComponentType,
-  TemplatePortal,
-} from '@angular/cdk/portal';
-import {
-  ComponentRef,
   Directive,
   ElementRef,
   EventEmitter,
@@ -18,35 +13,25 @@ import {
   TemplateRef,
   ViewContainerRef,
 } from '@angular/core';
-import { BehaviorSubject, Subject } from 'rxjs';
+import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-import { MenuComponent } from '../components';
-import { getPositions, MENU_DATA } from '../const';
+import { EMPTY_VIEW_VALUE_ERROR, MENU_DATA, getPositions } from '../const';
 import { MenuPosition, MenuRef } from '../models';
+
+type MenuView = TemplateRef<any> | ComponentType<any>;
+type MenuPortal = TemplatePortal<any> | ComponentPortal<any>;
 
 @Directive({
   selector: '[tMenuTrigger]',
 })
 export class MenuTriggerDirective implements OnInit, OnDestroy {
   private overlayRef!: OverlayRef;
-  private portal!: TemplatePortal<any> | ComponentPortal<any>;
-  private menuInjector!: Injector;
   private menuRef = new MenuRef();
-  private data$ = new BehaviorSubject<any>(null);
   private unsubscribe = new Subject<void>();
 
-  @Input('tMenuTrigger') set target(
-    val: TemplateRef<any> | ComponentType<any>
-  ) {
-    this.portal =
-      val instanceof TemplateRef
-        ? new TemplatePortal(val, this.viewContainerRef)
-        : new ComponentPortal(val, null, this.menuInjector);
-  }
-  @Input('menuData') set tooltipData(data: any) {
-    this.data$.next(data);
-  }
+  @Input('tMenuTrigger') view!: MenuView;
+  @Input('menuData') data: any;
   @Input('menuPosition') position: MenuPosition = 'below';
 
   @Output() afterClose = new EventEmitter<any>();
@@ -55,13 +40,11 @@ export class MenuTriggerDirective implements OnInit, OnDestroy {
     private elRef: ElementRef<HTMLElement>,
     private injector: Injector,
     private overlay: Overlay,
-    private viewContainerRef: ViewContainerRef
-  ) {
-    this.earlyInit();
-  }
+    private viewContainerRef: ViewContainerRef,
+  ) {}
 
   ngOnInit(): void {
-    this.menuRef.close$.pipe(takeUntil(this.unsubscribe)).subscribe((value) => {
+    this.menuRef.onClose.pipe(takeUntil(this.unsubscribe)).subscribe((value) => {
       this.afterClose.emit(value);
       this.closeMenu();
     });
@@ -72,20 +55,43 @@ export class MenuTriggerDirective implements OnInit, OnDestroy {
     this.unsubscribe.complete();
   }
 
-  earlyInit(): void {
-    this.menuInjector = Injector.create({
+  closeMenu(): void {
+    this.overlayRef.dispose();
+  }
+
+  @HostListener('click', ['$event'])
+  openMenu(event: Event): void {
+    this.overlayRef = this.createOverlay();
+    this.overlayRef.attach(this.getPortal());
+    event.stopPropagation();
+  }
+
+  private createInjector(menuRef: MenuRef, data: any): Injector {
+    return Injector.create({
       providers: [
         {
           provide: MenuRef,
-          useValue: this.menuRef,
+          useValue: menuRef,
         },
         {
           provide: MENU_DATA,
-          useValue: this.data$,
+          useValue: data,
         },
       ],
       parent: this.injector,
     });
+  }
+
+  private createPortal(view: MenuView, viewContainerRef: ViewContainerRef, injector: Injector): MenuPortal {
+    return view instanceof TemplateRef
+      ? new TemplatePortal(view, viewContainerRef)
+      : new ComponentPortal(view, viewContainerRef, injector);
+  }
+
+  private getPortal(): MenuPortal {
+    if (!this.view) throw Error(EMPTY_VIEW_VALUE_ERROR);
+    const injector = this.createInjector(this.menuRef, this.data);
+    return this.createPortal(this.view, this.viewContainerRef, injector);
   }
 
   private createOverlay(): OverlayRef {
@@ -100,21 +106,10 @@ export class MenuTriggerDirective implements OnInit, OnDestroy {
     overlayRef
       .backdropClick()
       .pipe(takeUntil(this.unsubscribe))
-      .subscribe(() => {
-        this.afterClose.emit();
-        this.closeMenu();
+      .subscribe((event: MouseEvent) => {
+        const hasBackdropCloseValue = typeof this.menuRef.backdropCloseValue !== 'undefined';
+        this.menuRef.close(hasBackdropCloseValue ? this.menuRef.backdropCloseValue : event);
       });
     return overlayRef;
-  }
-
-  closeMenu(): void {
-    this.overlayRef.dispose();
-  }
-
-  @HostListener('click') openMenu(): void {
-    this.overlayRef = this.createOverlay();
-    const ref: ComponentRef<MenuComponent> = this.overlayRef.attach(
-      this.portal
-    );
   }
 }

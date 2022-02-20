@@ -1,9 +1,11 @@
-import { Subject } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 
-export class MenuRef {
-  public close$ = new Subject<any>();
+export class MenuRef<T = any> {
+  private close$ = new Subject<any>();
+  public onClose: Observable<T> = this.close$.asObservable();
+  public backdropCloseValue!: T;
 
-  close(value?: any): void {
+  close(value?: T): void {
     this.close$.next(value);
   }
 }
